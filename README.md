@@ -9,13 +9,19 @@ Control [TypeWhisper](https://www.typewhisper.com) directly from Raycast - start
 
 ## Commands
 
-| Command                     | Description                                                         |
-| --------------------------- | ------------------------------------------------------------------- |
-| **Start Dictation**         | Start or stop voice dictation with a single keystroke               |
-| **Search History**          | Browse and search your transcription history                        |
-| **Show Last Transcription** | Copy the most recent transcription to your clipboard                |
-| **Switch Profile**          | View and toggle TypeWhisper profiles                                |
-| **Transcribe File**         | Transcribe an audio file (WAV, MP3, M4A, FLAC, OGG, AAC, MP4, WebM) |
+| Command                     | Description                                                             |
+| --------------------------- | ----------------------------------------------------------------------- |
+| **Start Dictation**         | Start or stop voice dictation with a single keystroke                   |
+| **Dictate with Workflow**   | Start a dictation that uses a specific workflow                         |
+| **Show Last Transcription** | Copy the most recent transcription to your clipboard                    |
+| **Search History**          | Browse and search your transcription history                            |
+| **Transcribe File**         | Transcribe an audio file (WAV, MP3, M4A, FLAC, OGG, AAC, MP4, WebM)     |
+| **Toggle Recording**        | Start or stop a recording, for example of a meeting                     |
+| **Show Last Recording**     | Show and copy the transcript of the last recording started from Raycast |
+| **Add Dictionary Term**     | Add the selected text or a typed word to the dictionary                 |
+| **Manage Dictionary**       | Browse, add, edit, and delete dictionary terms and corrections          |
+| **Manage Workflows**        | Enable or disable workflows and start a dictation with one              |
+| **Switch Model**            | Choose the transcription engine and model                               |
 
 ## Configuration
 

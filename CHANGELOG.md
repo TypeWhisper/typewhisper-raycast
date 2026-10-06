@@ -1,7 +1,12 @@
 # TypeWhisper Changelog
 
-## [API Token Support] - {PR_MERGE_DATE}
+## [Workflows, Recorder, Dictionary, Models, and API Token] - {PR_MERGE_DATE}
 
+- Add Dictate with Workflow to start a dictation that uses a specific workflow
+- Rename Switch Profile to Manage Workflows, since TypeWhisper profiles are now workflows, and start a dictation with the selected workflow from there
+- Add Toggle Recording and Show Last Recording to record meetings and copy the transcript or open the recording
+- Add Add Dictionary Term for the selected text or a typed word, and Manage Dictionary to browse, add, edit, and delete terms and corrections; deleting asks for confirmation
+- Add Switch Model to choose the transcription engine and model
 - Send the TypeWhisper API token with every request, read from the `api-discovery.json` file that TypeWhisper writes while its API server runs
 - Keep working with TypeWhisper versions that do not require a token
 - Read the discovery files on Windows from `%LOCALAPPDATA%`

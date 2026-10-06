@@ -136,32 +136,39 @@ async function fetchJson<T>(
   return (await response.json()) as T;
 }
 
+interface RequestOptions {
+  params?: Record<string, string>;
+  body?: unknown;
+  timeoutMs?: number;
+  timeoutMessage?: string;
+}
+
 async function request<T>(
   method: string,
   path: string,
-  params?: Record<string, string>,
-  body?: unknown,
+  options: RequestOptions = {},
 ): Promise<T> {
   const baseUrl = getBaseUrl();
   const url = new URL(path, baseUrl);
-  if (params) {
-    for (const [key, value] of Object.entries(params)) {
+  if (options.params) {
+    for (const [key, value] of Object.entries(options.params)) {
       url.searchParams.set(key, value);
     }
   }
 
+  const hasBody = options.body !== undefined;
   return fetchJson<T>(
     url,
     {
       method,
       headers: {
         ...getAuthHeaders(),
-        ...(body ? { "Content-Type": "application/json" } : {}),
+        ...(hasBody ? { "Content-Type": "application/json" } : {}),
       },
-      body: body ? JSON.stringify(body) : undefined,
-      signal: AbortSignal.timeout(TIMEOUT_MS),
+      body: hasBody ? JSON.stringify(options.body) : undefined,
+      signal: AbortSignal.timeout(options.timeoutMs ?? TIMEOUT_MS),
     },
-    "Request timed out. Is TypeWhisper running?",
+    options.timeoutMessage ?? "Request timed out. Is TypeWhisper running?",
   );
 }
 
@@ -169,25 +176,44 @@ export async function apiGet<T>(
   path: string,
   params?: Record<string, string>,
 ): Promise<T> {
-  return request<T>("GET", path, params);
+  return request<T>("GET", path, { params });
 }
 
-export async function apiPost<T>(path: string, body?: unknown): Promise<T> {
-  return request<T>("POST", path, undefined, body);
+export async function apiPost<T>(
+  path: string,
+  body?: unknown,
+  options: Omit<RequestOptions, "body"> = {},
+): Promise<T> {
+  return request<T>("POST", path, { ...options, body });
 }
 
 export async function apiPut<T>(
   path: string,
   params?: Record<string, string>,
 ): Promise<T> {
-  return request<T>("PUT", path, params);
+  return request<T>("PUT", path, { params });
+}
+
+export async function apiPutJson<T>(path: string, body: unknown): Promise<T> {
+  return request<T>("PUT", path, { body });
 }
 
 export async function apiDelete<T>(
   path: string,
   params?: Record<string, string>,
 ): Promise<T> {
-  return request<T>("DELETE", path, params);
+  return request<T>("DELETE", path, { params });
+}
+
+export async function apiDeleteJson<T>(
+  path: string,
+  body: unknown,
+): Promise<T> {
+  return request<T>("DELETE", path, { body });
+}
+
+export function errorMessage(error: unknown, fallback: string): string {
+  return error instanceof TypeWhisperError ? error.message : fallback;
 }
 
 export async function apiPostMultipart<T>(
