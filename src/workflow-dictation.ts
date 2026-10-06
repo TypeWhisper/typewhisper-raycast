@@ -1,6 +1,11 @@
 import { closeMainWindow, showHUD } from "@raycast/api";
 import { apiGet, apiPost, TypeWhisperError } from "./api";
-import type { DictationStartResponse, DictationStatusResponse } from "./types";
+import { setLastDictationSessionId } from "./dictation-session";
+import type {
+  DictationStartResponse,
+  DictationStatusResponse,
+  DictationStopResponse,
+} from "./types";
 
 export async function startDictationWithWorkflow(workflow: {
   id: string;
@@ -9,7 +14,7 @@ export async function startDictationWithWorkflow(workflow: {
   const status = await apiGet<DictationStatusResponse>("/v1/dictation/status");
   if (status.is_recording) {
     throw new TypeWhisperError(
-      "A dictation is already running. Stop it with Start Dictation first.",
+      "A dictation is already running. Stop it first.",
     );
   }
 
@@ -19,4 +24,13 @@ export async function startDictationWithWorkflow(workflow: {
     workflow_id: workflow.id,
   });
   await showHUD(`Dictation started with "${workflow.name}"`);
+}
+
+export async function stopDictation(): Promise<void> {
+  // TypeWhisper inserts the text into the frontmost app, so hand focus back
+  // before stopping.
+  await closeMainWindow();
+  const response = await apiPost<DictationStopResponse>("/v1/dictation/stop");
+  await setLastDictationSessionId(response.id);
+  await showHUD("Dictation stopped");
 }

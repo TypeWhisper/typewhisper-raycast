@@ -1,8 +1,9 @@
 import { Action, ActionPanel, Detail, Icon, Keyboard } from "@raycast/api";
+import { showFailureToast } from "@raycast/utils";
 import { usePromise } from "@raycast/utils";
 import { useEffect } from "react";
 import { apiGet, errorMessage, TypeWhisperError } from "./api";
-import { getLastRecorderSessionId } from "./recorder-session";
+import { getLastRecorderSessionId, stopRecording } from "./recorder-session";
 import type { RecorderSessionResponse } from "./types";
 
 const POLL_INTERVAL_MS = 2000;
@@ -42,7 +43,7 @@ function markdownFor(
 
   switch (session.status) {
     case "recording":
-      return "## Recording…\n\nStop it with **Toggle Recording**.";
+      return "## Recording…\n\nPress Enter to stop the recording.";
     case "finalizing":
       return "## Transcribing…\n\nThis view updates when the transcript is ready.";
     case "failed":
@@ -68,6 +69,17 @@ export default function Command() {
     return () => clearInterval(timer);
   }, [inProgress, revalidate]);
 
+  async function stop() {
+    try {
+      await stopRecording();
+      revalidate();
+    } catch (error) {
+      await showFailureToast(errorMessage(error, "Failed to stop recording"), {
+        title: "TypeWhisper",
+      });
+    }
+  }
+
   const transcript = data?.status === "completed" ? data.text : undefined;
   const outputFile = data?.output_file ?? undefined;
 
@@ -77,6 +89,9 @@ export default function Command() {
       markdown={markdownFor(data, error)}
       actions={
         <ActionPanel>
+          {data?.status === "recording" && (
+            <Action title="Stop Recording" icon={Icon.Stop} onAction={stop} />
+          )}
           {transcript && (
             <>
               <Action.CopyToClipboard

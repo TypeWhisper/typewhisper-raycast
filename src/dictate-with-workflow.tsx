@@ -6,6 +6,10 @@ import {
   parseApiResponse,
   getBaseUrl,
 } from "./api";
+import {
+  RunningDictationSection,
+  useDictationStatus,
+} from "./running-dictation";
 import type { WorkflowsResponse } from "./types";
 import { startDictationWithWorkflow } from "./workflow-dictation";
 
@@ -23,6 +27,9 @@ export default function Command() {
     (workflow) => workflow.is_enabled,
   );
 
+  const { status } = useDictationStatus();
+  const isRecording = status?.is_recording === true;
+
   async function start(workflow: { id: string; name: string }) {
     try {
       await startDictationWithWorkflow(workflow);
@@ -35,6 +42,7 @@ export default function Command() {
 
   return (
     <List isLoading={isLoading} searchBarPlaceholder="Search workflows...">
+      <RunningDictationSection status={status} />
       {workflows.length === 0 && !isLoading ? (
         <List.EmptyView
           title="No enabled workflows"
@@ -58,13 +66,15 @@ export default function Command() {
                 : []
             }
             actions={
-              <ActionPanel>
-                <Action
-                  title="Start Dictation"
-                  icon={Icon.Microphone}
-                  onAction={() => start(workflow)}
-                />
-              </ActionPanel>
+              isRecording ? undefined : (
+                <ActionPanel>
+                  <Action
+                    title="Start Dictation"
+                    icon={Icon.Microphone}
+                    onAction={() => start(workflow)}
+                  />
+                </ActionPanel>
+              )
             }
           />
         ))

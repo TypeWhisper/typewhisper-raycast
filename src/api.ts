@@ -1,5 +1,5 @@
 import { getPreferenceValues } from "@raycast/api";
-import { readFileSync } from "fs";
+import { readFileSync, statSync } from "fs";
 import { homedir } from "os";
 import { join } from "path";
 import type { ApiError } from "./types";
@@ -20,6 +20,7 @@ export class TypeWhisperError extends Error {
 interface DiscoveredInstance {
   port: number;
   token?: string;
+  writtenAt: number;
 }
 
 function appSupportDirectories(): string[] {
@@ -47,26 +48,27 @@ function parsePort(value: unknown): number | null {
 // server runs. Older versions only write the api-port file.
 function readInstance(directory: string): DiscoveredInstance | null {
   try {
-    const document = JSON.parse(
-      readFileSync(join(directory, "api-discovery.json"), "utf-8"),
-    ) as { port?: unknown; token?: unknown };
+    const path = join(directory, "api-discovery.json");
+    const document = JSON.parse(readFileSync(path, "utf-8")) as {
+      port?: unknown;
+      token?: unknown;
+    };
     const port = parsePort(document.port);
     if (port) {
       const token =
         typeof document.token === "string" && document.token.trim() !== ""
           ? document.token.trim()
           : undefined;
-      return { port, token };
+      return { port, token, writtenAt: statSync(path).mtimeMs };
     }
   } catch {
     // fall back to the legacy port file
   }
 
   try {
-    const port = parsePort(
-      readFileSync(join(directory, "api-port"), "utf-8").trim(),
-    );
-    return port ? { port } : null;
+    const path = join(directory, "api-port");
+    const port = parsePort(readFileSync(path, "utf-8").trim());
+    return port ? { port, writtenAt: statSync(path).mtimeMs } : null;
   } catch {
     return null;
   }
@@ -75,16 +77,19 @@ function readInstance(directory: string): DiscoveredInstance | null {
 function discoverInstance(): DiscoveredInstance {
   const instances = appSupportDirectories()
     .map(readInstance)
-    .filter((instance): instance is DiscoveredInstance => instance !== null);
+    .filter((instance): instance is DiscoveredInstance => instance !== null)
+    // A crashed app can leave its files behind. The newest file belongs to
+    // the instance that started its API server last.
+    .sort((a, b) => b.writtenAt - a.writtenAt);
 
   const prefs = getPreferenceValues<Preferences>();
   const overridePort = prefs.port ? parsePort(prefs.port.trim()) : null;
   if (overridePort) {
     const match = instances.find((instance) => instance.port === overridePort);
-    return { port: overridePort, token: match?.token };
+    return { port: overridePort, token: match?.token, writtenAt: 0 };
   }
 
-  return instances[0] ?? { port: DEFAULT_PORT };
+  return instances[0] ?? { port: DEFAULT_PORT, writtenAt: 0 };
 }
 
 export function getBaseUrl(): string {

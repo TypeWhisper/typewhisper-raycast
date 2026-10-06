@@ -18,6 +18,10 @@ import {
   TypeWhisperError,
 } from "./api";
 import type { ProfilesResponse } from "./types";
+import {
+  RunningDictationSection,
+  useDictationStatus,
+} from "./running-dictation";
 import { startDictationWithWorkflow } from "./workflow-dictation";
 
 export default function Command() {
@@ -47,6 +51,9 @@ export default function Command() {
     }
   }
 
+  const { status } = useDictationStatus();
+  const isRecording = status?.is_recording === true;
+
   async function dictate(workflow: { id: string; name: string }) {
     try {
       await startDictationWithWorkflow(workflow);
@@ -61,6 +68,7 @@ export default function Command() {
 
   return (
     <List isLoading={isLoading} searchBarPlaceholder="Search workflows...">
+      <RunningDictationSection status={status} />
       {profiles.length === 0 && !isLoading ? (
         <List.EmptyView
           title="No workflows configured"
@@ -100,7 +108,7 @@ export default function Command() {
                   icon={profile.is_enabled ? Icon.Circle : Icon.CheckCircle}
                   onAction={() => toggleWorkflow(profile.id, profile.name)}
                 />
-                {profile.is_enabled && (
+                {profile.is_enabled && !isRecording && (
                   <Action
                     title="Dictate with Workflow"
                     icon={Icon.Microphone}

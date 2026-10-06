@@ -48,6 +48,9 @@ export interface StatusResponse {
 
 export interface DictationStatusResponse {
   is_recording: boolean;
+  state?: string;
+  active_workflow?: string | null;
+  active_workflow_id?: string | null;
 }
 
 export interface DictationStartResponse {
