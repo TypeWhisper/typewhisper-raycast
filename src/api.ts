@@ -1,5 +1,6 @@
 import { getPreferenceValues } from "@raycast/api";
 import { readFileSync } from "fs";
+import { homedir } from "os";
 import { join } from "path";
 import type { ApiError } from "./types";
 
@@ -16,42 +17,83 @@ export class TypeWhisperError extends Error {
   }
 }
 
-function readPortFile(dirName: string): number | null {
+interface DiscoveredInstance {
+  port: number;
+  token?: string;
+}
+
+function appSupportDirectories(): string[] {
+  if (process.platform === "win32") {
+    const root =
+      process.env.LOCALAPPDATA || join(homedir(), "AppData", "Local");
+    return [
+      "TypeWhisper-UserData",
+      "TypeWhisper",
+      "TypeWhisper-DevUserData",
+      "TypeWhisper-Dev",
+    ].map((name) => join(root, name));
+  }
+
+  const root = join(homedir(), "Library", "Application Support");
+  return [join(root, "TypeWhisper"), join(root, "TypeWhisper-Dev")];
+}
+
+function parsePort(value: unknown): number | null {
+  const port = typeof value === "number" ? value : parseInt(String(value), 10);
+  return Number.isInteger(port) && port > 0 && port <= 65535 ? port : null;
+}
+
+// TypeWhisper writes api-discovery.json (port and API token) while its API
+// server runs. Older versions only write the api-port file.
+function readInstance(directory: string): DiscoveredInstance | null {
   try {
-    const home = process.env.HOME || "";
-    const portPath = join(
-      home,
-      "Library",
-      "Application Support",
-      dirName,
-      "api-port",
+    const document = JSON.parse(
+      readFileSync(join(directory, "api-discovery.json"), "utf-8"),
+    ) as { port?: unknown; token?: unknown };
+    const port = parsePort(document.port);
+    if (port) {
+      const token =
+        typeof document.token === "string" && document.token.trim() !== ""
+          ? document.token.trim()
+          : undefined;
+      return { port, token };
+    }
+  } catch {
+    // fall back to the legacy port file
+  }
+
+  try {
+    const port = parsePort(
+      readFileSync(join(directory, "api-port"), "utf-8").trim(),
     );
-    const content = readFileSync(portPath, "utf-8").trim();
-    const port = parseInt(content, 10);
-    return isNaN(port) ? null : port;
+    return port ? { port } : null;
   } catch {
     return null;
   }
 }
 
-function discoverPort(): number {
+function discoverInstance(): DiscoveredInstance {
+  const instances = appSupportDirectories()
+    .map(readInstance)
+    .filter((instance): instance is DiscoveredInstance => instance !== null);
+
   const prefs = getPreferenceValues<Preferences>();
-  if (prefs.port && prefs.port.trim() !== "") {
-    const port = parseInt(prefs.port.trim(), 10);
-    if (!isNaN(port)) return port;
+  const overridePort = prefs.port ? parsePort(prefs.port.trim()) : null;
+  if (overridePort) {
+    const match = instances.find((instance) => instance.port === overridePort);
+    return { port: overridePort, token: match?.token };
   }
 
-  const prodPort = readPortFile("TypeWhisper");
-  if (prodPort) return prodPort;
-
-  const devPort = readPortFile("TypeWhisper-Dev");
-  if (devPort) return devPort;
-
-  return DEFAULT_PORT;
+  return instances[0] ?? { port: DEFAULT_PORT };
 }
 
 export function getBaseUrl(): string {
-  return `http://127.0.0.1:${discoverPort()}`;
+  return `http://127.0.0.1:${discoverInstance().port}`;
+}
+
+export function getAuthHeaders(): Record<string, string> {
+  const { token } = discoverInstance();
+  return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
 async function fetchJson<T>(
@@ -68,6 +110,13 @@ async function fetchJson<T>(
     }
     throw new TypeWhisperError(
       "Cannot connect to TypeWhisper. Make sure the app is running and the API server is enabled in Settings > Advanced.",
+    );
+  }
+
+  if (response.status === 401) {
+    throw new TypeWhisperError(
+      "TypeWhisper rejected the API token. Restart TypeWhisper and try again.",
+      401,
     );
   }
 
@@ -103,7 +152,10 @@ async function request<T>(
     url,
     {
       method,
-      headers: body ? { "Content-Type": "application/json" } : undefined,
+      headers: {
+        ...getAuthHeaders(),
+        ...(body ? { "Content-Type": "application/json" } : {}),
+      },
       body: body ? JSON.stringify(body) : undefined,
       signal: AbortSignal.timeout(TIMEOUT_MS),
     },
@@ -147,6 +199,7 @@ export async function apiPostMultipart<T>(
     url,
     {
       method: "POST",
+      headers: getAuthHeaders(),
       body: formData,
       signal: AbortSignal.timeout(60000),
     },

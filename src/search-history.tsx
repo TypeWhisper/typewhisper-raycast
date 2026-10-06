@@ -12,7 +12,7 @@ import {
 } from "@raycast/api";
 import { useFetch } from "@raycast/utils";
 import { useState } from "react";
-import { apiDelete, getBaseUrl, TypeWhisperError } from "./api";
+import { apiDelete, getAuthHeaders, getBaseUrl, TypeWhisperError } from "./api";
 import type { HistoryResponse } from "./types";
 
 const PAGE_SIZE = 50;
@@ -49,7 +49,7 @@ export default function Command() {
 
   const { isLoading, data, revalidate } = useFetch<HistoryResponse>(
     `${getBaseUrl()}/v1/history?${params.toString()}`,
-    { keepPreviousData: true },
+    { headers: getAuthHeaders(), keepPreviousData: true },
   );
 
   async function deleteEntry(id: string) {

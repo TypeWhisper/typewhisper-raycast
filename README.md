@@ -19,4 +19,4 @@ Control [TypeWhisper](https://www.typewhisper.com) directly from Raycast - start
 
 ## Configuration
 
-The extension auto-discovers TypeWhisper's API port. If you use a custom port, set it in the extension preferences under **API Port Override**.
+The extension finds TypeWhisper's API port and API token automatically, so it also works when **Require API Token** is turned on. If you use a custom port, set it in the extension preferences under **API Port Override**.

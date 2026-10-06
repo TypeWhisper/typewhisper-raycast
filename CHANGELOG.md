@@ -1,5 +1,11 @@
 # TypeWhisper Changelog
 
+## [API Token Support] - {PR_MERGE_DATE}
+
+- Send the TypeWhisper API token with every request, read from the `api-discovery.json` file that TypeWhisper writes while its API server runs
+- Keep working with TypeWhisper versions that do not require a token
+- Read the discovery files on Windows from `%LOCALAPPDATA%`
+
 ## [Finder Selection for File Transcription] - 2026-06-28
 
 - Prefill Transcribe File with the selected Finder audio file when available

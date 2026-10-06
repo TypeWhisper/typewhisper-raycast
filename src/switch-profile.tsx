@@ -9,13 +9,14 @@ import {
   Keyboard,
 } from "@raycast/api";
 import { useFetch } from "@raycast/utils";
-import { apiPut, getBaseUrl, TypeWhisperError } from "./api";
+import { apiPut, getAuthHeaders, getBaseUrl, TypeWhisperError } from "./api";
 import type { ProfilesResponse } from "./types";
 
 export default function Command() {
   const { isLoading, data, revalidate } = useFetch<ProfilesResponse>(
     `${getBaseUrl()}/v1/profiles`,
     {
+      headers: getAuthHeaders(),
       keepPreviousData: true,
     },
   );
