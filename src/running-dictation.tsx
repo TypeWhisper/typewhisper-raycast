@@ -9,16 +9,23 @@ const POLL_INTERVAL_MS = 2000;
 
 /** Polls the dictation state while the view is open. */
 export function useDictationStatus() {
-  const { data, revalidate } = usePromise(() =>
-    apiGet<DictationStatusResponse>("/v1/dictation/status"),
+  const { data, error, revalidate } = usePromise(
+    () => apiGet<DictationStatusResponse>("/v1/dictation/status"),
+    [],
+    // The lists show their own errors; a failing status check stays quiet.
+    { onError: () => {} },
   );
 
+  // Stop polling after a failure instead of retrying every 2 seconds.
   useEffect(() => {
+    if (error) {
+      return;
+    }
     const timer = setInterval(revalidate, POLL_INTERVAL_MS);
     return () => clearInterval(timer);
-  }, [revalidate]);
+  }, [error, revalidate]);
 
-  return { status: data, revalidate };
+  return { status: error ? undefined : data, revalidate };
 }
 
 /** Shown at the top of a list while a dictation is recording. */

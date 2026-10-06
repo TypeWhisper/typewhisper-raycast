@@ -1,12 +1,14 @@
 import { Action, ActionPanel, Detail, Icon, Keyboard } from "@raycast/api";
 import { showFailureToast } from "@raycast/utils";
 import { usePromise } from "@raycast/utils";
-import { useEffect } from "react";
-import { apiGet, errorMessage, TypeWhisperError } from "./api";
+import { useEffect, useState } from "react";
+import { apiGet, apiPost, errorMessage, TypeWhisperError } from "./api";
 import { getLastRecorderSessionId, stopRecording } from "./recorder-session";
-import type { RecorderSessionResponse } from "./types";
+import type { RecorderSessionResponse, TranscribeResponse } from "./types";
 
 const POLL_INTERVAL_MS = 2000;
+// Long recordings take a while to transcribe.
+const TRANSCRIBE_TIMEOUT_MS = 30 * 60 * 1000;
 
 async function fetchLastRecording(): Promise<RecorderSessionResponse | null> {
   const id = await getLastRecorderSessionId();
@@ -30,7 +32,11 @@ async function fetchLastRecording(): Promise<RecorderSessionResponse | null> {
 function markdownFor(
   session: RecorderSessionResponse | null | undefined,
   error: Error | undefined,
+  transcribedText: string | undefined,
 ): string {
+  if (transcribedText) {
+    return transcribedText;
+  }
   if (error) {
     return `## Could not load the recording\n\n${errorMessage(error, "Unknown error")}`;
   }
@@ -49,25 +55,35 @@ function markdownFor(
     case "failed":
       return `## Recording failed\n\n${session.error ?? "TypeWhisper did not report a reason."}`;
     case "completed":
-      return session.text
-        ? session.text
-        : "## No transcript\n\nThe recording was saved, but TypeWhisper did not create a transcript.";
+      if (session.text) {
+        return session.text;
+      }
+      return session.output_file
+        ? "## No transcript yet\n\nTypeWhisper saved the recording without transcribing it. Press Enter to transcribe it now."
+        : "## No transcript\n\nTypeWhisper did not save a recording file.";
   }
 }
 
 export default function Command() {
-  const { isLoading, data, error, revalidate } = usePromise(fetchLastRecording);
+  const { isLoading, data, error, revalidate } = usePromise(
+    fetchLastRecording,
+    [],
+    // The view shows the error itself.
+    { onError: () => {} },
+  );
+  const [transcribedText, setTranscribedText] = useState<string>();
+  const [isTranscribing, setIsTranscribing] = useState(false);
 
   const inProgress =
     data?.status === "recording" || data?.status === "finalizing";
 
   useEffect(() => {
-    if (!inProgress) {
+    if (!inProgress || error) {
       return;
     }
     const timer = setInterval(revalidate, POLL_INTERVAL_MS);
     return () => clearInterval(timer);
-  }, [inProgress, revalidate]);
+  }, [inProgress, error, revalidate]);
 
   async function stop() {
     try {
@@ -80,17 +96,49 @@ export default function Command() {
     }
   }
 
-  const transcript = data?.status === "completed" ? data.text : undefined;
+  async function transcribe(path: string) {
+    setIsTranscribing(true);
+    try {
+      const result = await apiPost<TranscribeResponse>(
+        "/v1/transcribe/local-file",
+        { path },
+        {
+          timeoutMs: TRANSCRIBE_TIMEOUT_MS,
+          timeoutMessage: "Transcribing the recording took too long.",
+        },
+      );
+      setTranscribedText(result.text);
+    } catch (err) {
+      await showFailureToast(errorMessage(err, "Failed to transcribe"), {
+        title: "TypeWhisper",
+      });
+    } finally {
+      setIsTranscribing(false);
+    }
+  }
+
+  const transcript =
+    transcribedText ??
+    (data?.status === "completed" ? (data.text ?? undefined) : undefined);
   const outputFile = data?.output_file ?? undefined;
+  const canTranscribe =
+    data?.status === "completed" && !transcript && outputFile !== undefined;
 
   return (
     <Detail
-      isLoading={isLoading || inProgress}
-      markdown={markdownFor(data, error)}
+      isLoading={isLoading || inProgress || isTranscribing}
+      markdown={markdownFor(data, error, transcribedText)}
       actions={
         <ActionPanel>
           {data?.status === "recording" && (
             <Action title="Stop Recording" icon={Icon.Stop} onAction={stop} />
+          )}
+          {canTranscribe && !isTranscribing && (
+            <Action
+              title="Transcribe Recording"
+              icon={Icon.Microphone}
+              onAction={() => transcribe(outputFile)}
+            />
           )}
           {transcript && (
             <>

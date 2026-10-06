@@ -39,7 +39,23 @@ function appSupportDirectories(): string[] {
   }
 
   const root = join(homedir(), "Library", "Application Support");
-  return [join(root, "TypeWhisper"), join(root, "TypeWhisper-Dev")];
+  // The Mac App Store edition is sandboxed and writes into its container.
+  const container = (bundleId: string) =>
+    join(
+      homedir(),
+      "Library",
+      "Containers",
+      bundleId,
+      "Data",
+      "Library",
+      "Application Support",
+    );
+  return [
+    join(root, "TypeWhisper"),
+    join(root, "TypeWhisper-Dev"),
+    join(container("com.typewhisper.typewhisper-app"), "TypeWhisper"),
+    join(container("com.typewhisper.typewhisper-app.dev"), "TypeWhisper-Dev"),
+  ];
 }
 
 function parsePort(value: unknown): number | null {

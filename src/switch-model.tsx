@@ -69,6 +69,15 @@ export default function Command() {
       return;
     }
 
+    // TypeWhisper for Windows loads only models that are already downloaded.
+    if (process.platform === "win32" && model.downloaded === false) {
+      await showToast({
+        style: Toast.Style.Failure,
+        title: `Download ${model.name} in TypeWhisper first`,
+      });
+      return;
+    }
+
     const toast = await showToast({
       style: Toast.Style.Animated,
       title: `Loading ${model.name}…`,
