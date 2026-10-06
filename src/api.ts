@@ -96,23 +96,8 @@ export function getAuthHeaders(): Record<string, string> {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
-async function fetchJson<T>(
-  url: URL,
-  init: RequestInit,
-  timeoutMessage: string,
-): Promise<T> {
-  let response: Response;
-  try {
-    response = await fetch(url.toString(), init);
-  } catch (error) {
-    if (error instanceof DOMException && error.name === "TimeoutError") {
-      throw new TypeWhisperError(timeoutMessage);
-    }
-    throw new TypeWhisperError(
-      "Cannot connect to TypeWhisper. Make sure the app is running and the API server is enabled in Settings > Advanced.",
-    );
-  }
-
+// Shared by fetchJson and the useFetch views, so both show the same errors.
+export async function parseApiResponse<T>(response: Response): Promise<T> {
   if (response.status === 401) {
     throw new TypeWhisperError(
       getAuthHeaders().Authorization
@@ -134,6 +119,26 @@ async function fetchJson<T>(
   }
 
   return (await response.json()) as T;
+}
+
+async function fetchJson<T>(
+  url: URL,
+  init: RequestInit,
+  timeoutMessage: string,
+): Promise<T> {
+  let response: Response;
+  try {
+    response = await fetch(url.toString(), init);
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "TimeoutError") {
+      throw new TypeWhisperError(timeoutMessage);
+    }
+    throw new TypeWhisperError(
+      "Cannot connect to TypeWhisper. Make sure the app is running and the API server is enabled in Settings > Advanced.",
+    );
+  }
+
+  return parseApiResponse<T>(response);
 }
 
 interface RequestOptions {

@@ -13,6 +13,7 @@ import {
   apiPut,
   errorMessage,
   getAuthHeaders,
+  parseApiResponse,
   getBaseUrl,
   TypeWhisperError,
 } from "./api";
@@ -24,6 +25,7 @@ export default function Command() {
     `${getBaseUrl()}/v1/profiles`,
     {
       headers: getAuthHeaders(),
+      parseResponse: parseApiResponse,
       keepPreviousData: true,
     },
   );

@@ -1,13 +1,22 @@
 import { Action, ActionPanel, Icon, List } from "@raycast/api";
 import { showFailureToast, useFetch } from "@raycast/utils";
-import { errorMessage, getAuthHeaders, getBaseUrl } from "./api";
+import {
+  errorMessage,
+  getAuthHeaders,
+  parseApiResponse,
+  getBaseUrl,
+} from "./api";
 import type { WorkflowsResponse } from "./types";
 import { startDictationWithWorkflow } from "./workflow-dictation";
 
 export default function Command() {
   const { isLoading, data } = useFetch<WorkflowsResponse>(
     `${getBaseUrl()}/v1/rules`,
-    { headers: getAuthHeaders(), keepPreviousData: true },
+    {
+      headers: getAuthHeaders(),
+      parseResponse: parseApiResponse,
+      keepPreviousData: true,
+    },
   );
 
   const workflows = (data?.rules ?? []).filter(

@@ -10,7 +10,13 @@ import {
   Toast,
 } from "@raycast/api";
 import { useFetch } from "@raycast/utils";
-import { apiDeleteJson, errorMessage, getAuthHeaders, getBaseUrl } from "./api";
+import {
+  apiDeleteJson,
+  errorMessage,
+  getAuthHeaders,
+  parseApiResponse,
+  getBaseUrl,
+} from "./api";
 import { AddCorrectionForm, AddTermForm } from "./dictionary-forms";
 import type {
   DictionaryCorrection,
@@ -21,11 +27,19 @@ import type {
 export default function Command() {
   const terms = useFetch<DictionaryTermsResponse>(
     `${getBaseUrl()}/v1/dictionary/terms`,
-    { headers: getAuthHeaders(), keepPreviousData: true },
+    {
+      headers: getAuthHeaders(),
+      parseResponse: parseApiResponse,
+      keepPreviousData: true,
+    },
   );
   const corrections = useFetch<DictionaryCorrectionsResponse>(
     `${getBaseUrl()}/v1/dictionary/corrections`,
-    { headers: getAuthHeaders(), keepPreviousData: true },
+    {
+      headers: getAuthHeaders(),
+      parseResponse: parseApiResponse,
+      keepPreviousData: true,
+    },
   );
 
   function refresh() {
