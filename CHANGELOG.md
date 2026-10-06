@@ -9,7 +9,9 @@
 - Add Switch Model to choose the transcription engine and model
 - Send the TypeWhisper API token with every request, read from the `api-discovery.json` file that TypeWhisper writes while its API server runs
 - Keep working with TypeWhisper versions that do not require a token
-- Read the discovery files on Windows from `%LOCALAPPDATA%`
+- Read the discovery files on Windows from `%LOCALAPPDATA%`, including the current `TypeWhisper-WinUI` folders
+- Use the newest discovery file, so files left behind by an app that did not quit cleanly no longer point the extension at a dead port
+- Stop a running dictation from Dictate with Workflow and Manage Workflows, and a running recording from Show Last Recording
 
 ## [Finder Selection for File Transcription] - 2026-06-28
 

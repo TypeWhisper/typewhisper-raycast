@@ -20,9 +20,12 @@ export async function startDictationWithWorkflow(workflow: {
 
   // Close Raycast first so the dictation goes into the app you came from.
   await closeMainWindow();
-  await apiPost<DictationStartResponse>("/v1/dictation/start", {
-    workflow_id: workflow.id,
-  });
+  const response = await apiPost<DictationStartResponse>(
+    "/v1/dictation/start",
+    { workflow_id: workflow.id },
+  );
+  // Track the session even if it is stopped outside Raycast.
+  await setLastDictationSessionId(response.id);
   await showHUD(`Dictation started with "${workflow.name}"`);
 }
 

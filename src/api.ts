@@ -27,7 +27,10 @@ function appSupportDirectories(): string[] {
   if (process.platform === "win32") {
     const root =
       process.env.LOCALAPPDATA || join(homedir(), "AppData", "Local");
+    // Current WinUI profiles first, then the folders of older versions.
     return [
+      "TypeWhisper-WinUI",
+      "TypeWhisper-WinUI-DevUserData",
       "TypeWhisper-UserData",
       "TypeWhisper",
       "TypeWhisper-DevUserData",
