@@ -115,7 +115,9 @@ async function fetchJson<T>(
 
   if (response.status === 401) {
     throw new TypeWhisperError(
-      "TypeWhisper rejected the API token. Restart TypeWhisper and try again.",
+      getAuthHeaders().Authorization
+        ? "TypeWhisper rejected the API token. Restart TypeWhisper and try again."
+        : "TypeWhisper requires an API token, but none was found. Update and restart TypeWhisper, then try again.",
       401,
     );
   }
