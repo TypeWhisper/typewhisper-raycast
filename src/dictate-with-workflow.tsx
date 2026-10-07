@@ -1,6 +1,6 @@
 import { Action, ActionPanel, Icon, List } from "@raycast/api";
 import { showFailureToast, useCachedPromise } from "@raycast/utils";
-import { apiGet, errorMessage } from "./api";
+import { apiGet, errorMessage, instanceCacheKey } from "./api";
 import {
   RunningDictationSection,
   useDictationStatus,
@@ -10,8 +10,9 @@ import { startDictationWithWorkflow } from "./workflow-dictation";
 
 export default function Command() {
   const { isLoading, data } = useCachedPromise(
-    () => apiGet<WorkflowsResponse>("/v1/rules"),
-    [],
+    (instance: string) =>
+      apiGet<WorkflowsResponse>("/v1/rules", undefined, instance),
+    [instanceCacheKey()],
     { keepPreviousData: true },
   );
 

@@ -133,13 +133,23 @@ function discoverInstances(): DiscoveredInstance[] {
 
 let lastReachablePort: number | undefined;
 
-/** Discovered instances, the one that answered last time first. */
-function candidateInstances(): DiscoveredInstance[] {
+/** Discovered instances, the preferred or last reachable one first. */
+function candidateInstances(preferredPort?: number): DiscoveredInstance[] {
   const instances = discoverInstances();
-  const index = instances.findIndex((i) => i.port === lastReachablePort);
+  const first = preferredPort ?? lastReachablePort;
+  const index = instances.findIndex((i) => i.port === first);
   return index > 0
     ? [instances[index], ...instances.filter((_, i) => i !== index)]
     : instances;
+}
+
+/**
+ * Identifies the instance a command will talk to first. List views pass it to
+ * their cached hooks, so a list cached from one TypeWhisper instance is not
+ * shown for another.
+ */
+export function instanceCacheKey(): string {
+  return String(candidateInstances()[0].port);
 }
 
 function isConnectionRefused(error: unknown): boolean {
@@ -176,6 +186,8 @@ async function parseApiResponse<T>(
 
 interface RequestOptions {
   params?: Record<string, string>;
+  /** An `instanceCacheKey()` value; that instance is asked first. */
+  instance?: string;
   body?: unknown;
   timeoutMs?: number;
   timeoutMessage?: string;
@@ -188,7 +200,9 @@ async function request<T>(
 ): Promise<T> {
   const isMultipart = options.body instanceof FormData;
   const hasJsonBody = options.body !== undefined && !isMultipart;
-  const candidates = candidateInstances();
+  const candidates = candidateInstances(
+    options.instance ? (parsePort(options.instance) ?? undefined) : undefined,
+  );
 
   for (const [index, instance] of candidates.entries()) {
     const url = new URL(path, `http://127.0.0.1:${instance.port}`);
@@ -240,8 +254,9 @@ async function request<T>(
 export async function apiGet<T>(
   path: string,
   params?: Record<string, string>,
+  instance?: string,
 ): Promise<T> {
-  return request<T>("GET", path, { params });
+  return request<T>("GET", path, { params, instance });
 }
 
 export async function apiPost<T>(

@@ -9,7 +9,13 @@ import {
   Keyboard,
 } from "@raycast/api";
 import { showFailureToast, useCachedPromise } from "@raycast/utils";
-import { apiGet, apiPut, errorMessage, TypeWhisperError } from "./api";
+import {
+  apiGet,
+  apiPut,
+  errorMessage,
+  instanceCacheKey,
+  TypeWhisperError,
+} from "./api";
 import type { ProfilesResponse } from "./types";
 import {
   RunningDictationSection,
@@ -19,8 +25,9 @@ import { startDictationWithWorkflow } from "./workflow-dictation";
 
 export default function Command() {
   const { isLoading, data, revalidate } = useCachedPromise(
-    () => apiGet<ProfilesResponse>("/v1/profiles"),
-    [],
+    (instance: string) =>
+      apiGet<ProfilesResponse>("/v1/profiles", undefined, instance),
+    [instanceCacheKey()],
     { keepPreviousData: true },
   );
 

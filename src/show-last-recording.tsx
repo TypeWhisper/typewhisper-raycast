@@ -98,6 +98,9 @@ export default function Command() {
       : undefined;
   const isTranscribing =
     transcribingSessionId !== undefined && transcribingSessionId === data?.id;
+  // One transcription at a time: a second one could finish first and then be
+  // overwritten by the older one.
+  const isAnyTranscriptionRunning = transcribingSessionId !== undefined;
 
   const inProgress =
     data?.status === "recording" || data?.status === "finalizing";
@@ -105,7 +108,8 @@ export default function Command() {
   // While the recording is still running or transcribing, refresh often;
   // after a failed check, keep trying at a slower pace.
   useEffect(() => {
-    if (!inProgress) {
+    // A failed check clears `data`, so `inProgress` alone would stop retrying.
+    if (!inProgress && !error) {
       return;
     }
     const timer = setInterval(
@@ -166,7 +170,7 @@ export default function Command() {
           {data?.status === "recording" && (
             <Action title="Stop Recording" icon={Icon.Stop} onAction={stop} />
           )}
-          {canTranscribe && !isTranscribing && (
+          {canTranscribe && !isAnyTranscriptionRunning && (
             <Action
               title="Transcribe Recording"
               icon={Icon.Microphone}

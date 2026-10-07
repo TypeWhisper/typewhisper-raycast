@@ -12,7 +12,7 @@ import {
 } from "@raycast/api";
 import { useCachedPromise } from "@raycast/utils";
 import { useState } from "react";
-import { apiDelete, apiGet, TypeWhisperError } from "./api";
+import { apiDelete, apiGet, instanceCacheKey, TypeWhisperError } from "./api";
 import type { HistoryResponse } from "./types";
 
 const PAGE_SIZE = 50;
@@ -48,12 +48,13 @@ export default function Command() {
   }
 
   const { isLoading, data, revalidate } = useCachedPromise(
-    (query: string) =>
+    (instance: string, query: string) =>
       apiGet<HistoryResponse>(
         "/v1/history",
         Object.fromEntries(new URLSearchParams(query)),
+        instance,
       ),
-    [params.toString()],
+    [instanceCacheKey(), params.toString()],
     { keepPreviousData: true },
   );
 

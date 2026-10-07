@@ -9,7 +9,7 @@ import {
   Toast,
 } from "@raycast/api";
 import { useCachedPromise } from "@raycast/utils";
-import { apiGet, apiPost, errorMessage } from "./api";
+import { apiGet, apiPost, errorMessage, instanceCacheKey } from "./api";
 import type { ModelEntry, ModelsResponse } from "./types";
 
 // Loading can include a model download.
@@ -45,8 +45,9 @@ function accessoriesFor(model: ModelEntry): List.Item.Accessory[] {
 
 export default function Command() {
   const { isLoading, data, revalidate } = useCachedPromise(
-    () => apiGet<ModelsResponse>("/v1/models"),
-    [],
+    (instance: string) =>
+      apiGet<ModelsResponse>("/v1/models", undefined, instance),
+    [instanceCacheKey()],
     { keepPreviousData: true },
   );
 
