@@ -131,13 +131,21 @@ function discoverInstances(): DiscoveredInstance[] {
     : [{ port: DEFAULT_PORT, writtenAt: 0 }];
 }
 
-let lastReachablePort: number | undefined;
+/**
+ * The instance this command settled on: the first one that answered. Every
+ * later request goes there, reads and writes alike, so a list, the status
+ * checks next to it, and the actions on its rows all talk to the same
+ * TypeWhisper. Commands run in their own process, so this resets per command.
+ */
+let commandInstancePort: number | undefined;
 
-/** Discovered instances, the preferred or last reachable one first. */
+const instanceGoneMessage =
+  "The TypeWhisper instance this command was using is no longer running. Reopen the command.";
+
+/** Discovered instances, the preferred one first. */
 function candidateInstances(preferredPort?: number): DiscoveredInstance[] {
   const instances = discoverInstances();
-  const first = preferredPort ?? lastReachablePort;
-  const index = instances.findIndex((i) => i.port === first);
+  const index = instances.findIndex((i) => i.port === preferredPort);
   return index > 0
     ? [instances[index], ...instances.filter((_, i) => i !== index)]
     : instances;
@@ -149,7 +157,7 @@ function candidateInstances(preferredPort?: number): DiscoveredInstance[] {
  * shown for another.
  */
 export function instanceCacheKey(): string {
-  return String(candidateInstances()[0].port);
+  return String(commandInstancePort ?? candidateInstances()[0].port);
 }
 
 function isConnectionRefused(error: unknown): boolean {
@@ -200,18 +208,17 @@ async function request<T>(
 ): Promise<T> {
   const isMultipart = options.body instanceof FormData;
   const hasJsonBody = options.body !== undefined && !isMultipart;
+  const isBound = commandInstancePort !== undefined;
   let candidates = candidateInstances(
-    options.instance ? (parsePort(options.instance) ?? undefined) : undefined,
+    commandInstancePort ??
+      (options.instance
+        ? (parsePort(options.instance) ?? undefined)
+        : undefined),
   );
-
-  // Once an instance has answered in this command, writes stay with it: a
-  // row shown from one TypeWhisper must not be changed on another one.
-  if (method !== "GET" && lastReachablePort !== undefined) {
-    const bound = candidates.find((i) => i.port === lastReachablePort);
+  if (isBound) {
+    const bound = candidates.find((i) => i.port === commandInstancePort);
     if (!bound) {
-      throw new TypeWhisperError(
-        "The TypeWhisper instance this command was using is no longer running. Reopen the command.",
-      );
+      throw new TypeWhisperError(instanceGoneMessage);
     }
     candidates = [bound];
   }
@@ -242,8 +249,13 @@ async function request<T>(
     } catch (error) {
       // A refused connection means nothing reached TypeWhisper, so trying the
       // next instance cannot run a request twice.
-      if (isConnectionRefused(error) && index < candidates.length - 1) {
-        continue;
+      if (isConnectionRefused(error)) {
+        if (index < candidates.length - 1) {
+          continue;
+        }
+        if (isBound) {
+          throw new TypeWhisperError(instanceGoneMessage);
+        }
       }
       if (error instanceof DOMException && error.name === "TimeoutError") {
         throw new TypeWhisperError(
@@ -256,7 +268,7 @@ async function request<T>(
       );
     }
 
-    lastReachablePort = instance.port;
+    commandInstancePort = instance.port;
     return parseApiResponse<T>(response, Boolean(instance.token));
   }
 
