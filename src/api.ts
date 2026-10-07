@@ -6,6 +6,9 @@ import type { ApiError } from "./types";
 
 const DEFAULT_PORT = 8978;
 const TIMEOUT_MS = 10000;
+// TypeWhisper answers a dictation start only after the model is ready,
+// which can include loading a local model.
+export const DICTATION_START_TIMEOUT_MS = 5 * 60 * 1000;
 
 export class TypeWhisperError extends Error {
   constructor(

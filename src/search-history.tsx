@@ -191,7 +191,7 @@ export default function Command() {
                   <Action.CopyToClipboard
                     title="Copy Raw Text"
                     content={entry.raw_text}
-                    shortcut={Keyboard.Shortcut.Common.Copy}
+                    shortcut={Keyboard.Shortcut.Common.CopyName}
                   />
                 )}
                 {entry.app_url && (

@@ -15,6 +15,8 @@
 - Find TypeWhisper from the Mac App Store, which keeps its files in its sandbox container
 - Find TypeWhisper and TypeWhisper Beta from the Microsoft Store, whose files Windows keeps in the package folder
 - Explain on Windows that a recording could not be stopped because none is running or the last one is still being saved
+- Wait for TypeWhisper to load the model when starting a dictation instead of giving up after 10 seconds
+- Move Copy Raw Text in Search History to ⌘⌥C (Ctrl+Alt+C on Windows), so the standard copy shortcut no longer copies the unprocessed text
 
 ## [Finder Selection for File Transcription] - 2026-06-28
 
