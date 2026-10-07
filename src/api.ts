@@ -268,7 +268,14 @@ async function request<T>(
       );
     }
 
-    commandInstancePort = instance.port;
+    // Requests started together before the first answer each pick their own
+    // instance. The first answer settles the command; a response that came
+    // from another instance is dropped, so its data never sits next to rows
+    // whose actions go to the settled one.
+    commandInstancePort ??= instance.port;
+    if (commandInstancePort !== instance.port) {
+      throw new TypeWhisperError(instanceGoneMessage);
+    }
     return parseApiResponse<T>(response, Boolean(instance.token));
   }
 
