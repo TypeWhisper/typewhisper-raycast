@@ -18,10 +18,14 @@ export async function stopRecording(): Promise<RecorderStopResponse> {
   try {
     response = await apiPost<RecorderStopResponse>("/v1/recorder/stop");
   } catch (error) {
-    // The API can only stop recordings it started itself.
     if (error instanceof TypeWhisperError && error.statusCode === 409) {
+      // On macOS the API can only stop recordings it started itself. On
+      // Windows it stops any recording; 409 means none is running or the
+      // last one is still being saved.
       throw new TypeWhisperError(
-        "This recording was started in TypeWhisper. Stop it there.",
+        process.platform === "win32"
+          ? "No recording to stop, or the last one is still being saved."
+          : "This recording was started in TypeWhisper. Stop it there.",
       );
     }
     throw error;

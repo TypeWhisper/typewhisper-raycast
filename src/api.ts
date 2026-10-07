@@ -27,15 +27,30 @@ function appSupportDirectories(): string[] {
   if (process.platform === "win32") {
     const root =
       process.env.LOCALAPPDATA || join(homedir(), "AppData", "Local");
+    // Microsoft Store builds are MSIX packages, so Windows redirects their
+    // %LOCALAPPDATA% writes into the package's LocalCache.
+    const packageData = (familyName: string) =>
+      join(root, "Packages", familyName, "LocalCache", "Local");
     // Current WinUI profiles first, then the folders of older versions.
     return [
-      "TypeWhisper-WinUI",
-      "TypeWhisper-WinUI-DevUserData",
-      "TypeWhisper-UserData",
-      "TypeWhisper",
-      "TypeWhisper-DevUserData",
-      "TypeWhisper-Dev",
-    ].map((name) => join(root, name));
+      join(root, "TypeWhisper-WinUI"),
+      join(root, "TypeWhisper-WinUI-DevUserData"),
+      join(root, "TypeWhisper-WinUI-StoreBeta"),
+      join(
+        packageData("TypeWhisper.TypeWhisper_51tqb5623pxja"),
+        "TypeWhisper-WinUI",
+      ),
+      join(
+        packageData("TypeWhisper.TypeWhisperBeta_51tqb5623pxja"),
+        "TypeWhisper-WinUI-StoreBeta",
+      ),
+      ...[
+        "TypeWhisper-UserData",
+        "TypeWhisper",
+        "TypeWhisper-DevUserData",
+        "TypeWhisper-Dev",
+      ].map((name) => join(root, name)),
+    ];
   }
 
   const root = join(homedir(), "Library", "Application Support");

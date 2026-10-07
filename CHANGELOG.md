@@ -13,6 +13,8 @@
 - Use the newest discovery file, so files left behind by an app that did not quit cleanly no longer point the extension at a dead port
 - Stop a running dictation from Dictate with Workflow and Manage Workflows, and a running recording from Show Last Recording
 - Find TypeWhisper from the Mac App Store, which keeps its files in its sandbox container
+- Find TypeWhisper and TypeWhisper Beta from the Microsoft Store, whose files Windows keeps in the package folder
+- Explain on Windows that a recording could not be stopped because none is running or the last one is still being saved
 
 ## [Finder Selection for File Transcription] - 2026-06-28
 
