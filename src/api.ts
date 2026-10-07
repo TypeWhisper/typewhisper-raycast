@@ -200,9 +200,21 @@ async function request<T>(
 ): Promise<T> {
   const isMultipart = options.body instanceof FormData;
   const hasJsonBody = options.body !== undefined && !isMultipart;
-  const candidates = candidateInstances(
+  let candidates = candidateInstances(
     options.instance ? (parsePort(options.instance) ?? undefined) : undefined,
   );
+
+  // Once an instance has answered in this command, writes stay with it: a
+  // row shown from one TypeWhisper must not be changed on another one.
+  if (method !== "GET" && lastReachablePort !== undefined) {
+    const bound = candidates.find((i) => i.port === lastReachablePort);
+    if (!bound) {
+      throw new TypeWhisperError(
+        "The TypeWhisper instance this command was using is no longer running. Reopen the command.",
+      );
+    }
+    candidates = [bound];
+  }
 
   for (const [index, instance] of candidates.entries()) {
     const url = new URL(path, `http://127.0.0.1:${instance.port}`);
