@@ -3,6 +3,7 @@ import { apiPost, TypeWhisperError } from "./api";
 import type { RecorderStopResponse } from "./types";
 
 const LAST_RECORDER_SESSION_ID_KEY = "last-recorder-session-id";
+const LAST_RECORDER_TRANSCRIPT_KEY = "last-recorder-transcript";
 
 export async function setLastRecorderSessionId(id: string): Promise<void> {
   await LocalStorage.setItem(LAST_RECORDER_SESSION_ID_KEY, id);
@@ -32,4 +33,33 @@ export async function stopRecording(): Promise<RecorderStopResponse> {
   }
   await setLastRecorderSessionId(response.id);
   return response;
+}
+
+// Transcripts made from Raycast are not stored in the recorder session, so
+// keep the one for the last session to show it again later.
+export async function setRecorderTranscript(
+  sessionId: string,
+  text: string,
+): Promise<void> {
+  await LocalStorage.setItem(
+    LAST_RECORDER_TRANSCRIPT_KEY,
+    JSON.stringify({ sessionId, text }),
+  );
+}
+
+export async function getRecorderTranscript(
+  sessionId: string,
+): Promise<string | undefined> {
+  const stored = await LocalStorage.getItem<string>(
+    LAST_RECORDER_TRANSCRIPT_KEY,
+  );
+  if (!stored) {
+    return undefined;
+  }
+  try {
+    const value = JSON.parse(stored) as { sessionId?: string; text?: string };
+    return value.sessionId === sessionId ? value.text : undefined;
+  } catch {
+    return undefined;
+  }
 }

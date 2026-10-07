@@ -3,7 +3,12 @@ import { showFailureToast } from "@raycast/utils";
 import { usePromise } from "@raycast/utils";
 import { useEffect, useState } from "react";
 import { apiGet, apiPost, errorMessage, TypeWhisperError } from "./api";
-import { getLastRecorderSessionId, stopRecording } from "./recorder-session";
+import {
+  getLastRecorderSessionId,
+  getRecorderTranscript,
+  setRecorderTranscript,
+  stopRecording,
+} from "./recorder-session";
 import type { RecorderSessionResponse, TranscribeResponse } from "./types";
 
 const POLL_INTERVAL_MS = 2000;
@@ -17,9 +22,17 @@ async function fetchLastRecording(): Promise<RecorderSessionResponse | null> {
   }
 
   try {
-    return await apiGet<RecorderSessionResponse>("/v1/recorder/session", {
-      id,
-    });
+    const session = await apiGet<RecorderSessionResponse>(
+      "/v1/recorder/session",
+      { id },
+    );
+    if (session.status === "completed" && !session.text) {
+      const savedText = await getRecorderTranscript(session.id);
+      if (savedText) {
+        return { ...session, text: savedText };
+      }
+    }
+    return session;
   } catch (error) {
     // TypeWhisper keeps recorder sessions only until it quits.
     if (error instanceof TypeWhisperError && error.statusCode === 404) {
@@ -96,7 +109,7 @@ export default function Command() {
     }
   }
 
-  async function transcribe(path: string) {
+  async function transcribe(sessionId: string, path: string) {
     setIsTranscribing(true);
     try {
       const result = await apiPost<TranscribeResponse>(
@@ -107,6 +120,7 @@ export default function Command() {
           timeoutMessage: "Transcribing the recording took too long.",
         },
       );
+      await setRecorderTranscript(sessionId, result.text);
       setTranscribedText(result.text);
     } catch (err) {
       await showFailureToast(errorMessage(err, "Failed to transcribe"), {
@@ -137,7 +151,7 @@ export default function Command() {
             <Action
               title="Transcribe Recording"
               icon={Icon.Microphone}
-              onAction={() => transcribe(outputFile)}
+              onAction={() => data && transcribe(data.id, outputFile)}
             />
           )}
           {transcript && (
