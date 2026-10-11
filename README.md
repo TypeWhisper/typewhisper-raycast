@@ -5,7 +5,7 @@ Control [TypeWhisper](https://www.typewhisper.com) directly from Raycast - start
 ## Prerequisites
 
 - [TypeWhisper](https://www.typewhisper.com) must be installed and running on your Mac or Windows PC
-- The API server must be enabled in TypeWhisper. On the Mac: **Settings > Advanced > Enable API Server**
+- The API server must be enabled in TypeWhisper. On the Mac: **Settings > Advanced > Enable API Server**. On Windows: **Settings > Advanced > API Server**
 
 ## Commands
 
