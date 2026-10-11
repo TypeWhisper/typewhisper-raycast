@@ -4,8 +4,8 @@ Control [TypeWhisper](https://www.typewhisper.com) directly from Raycast - start
 
 ## Prerequisites
 
-- [TypeWhisper](https://www.typewhisper.com) must be installed and running on your Mac
-- The API server must be enabled in TypeWhisper: **Settings > Advanced > Enable API Server**
+- [TypeWhisper](https://www.typewhisper.com) must be installed and running on your Mac or Windows PC
+- The API server must be enabled in TypeWhisper. On the Mac: **Settings > Advanced > Enable API Server**. On Windows: **Settings > Advanced > API Server**
 
 ## Commands
 
@@ -26,3 +26,7 @@ Control [TypeWhisper](https://www.typewhisper.com) directly from Raycast - start
 ## Configuration
 
 The extension finds TypeWhisper's API port and API token automatically, so it also works when **Require API Token** is turned on. If you use a custom port, set it in the extension preferences under **API Port Override**.
+
+## License
+
+[MIT](LICENSE). The Raycast Store requires extensions to be MIT-licensed, so this extension does not use the GPL license of the TypeWhisper app.
